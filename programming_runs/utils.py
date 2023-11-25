@@ -6,7 +6,6 @@ import jsonlines
 
 from typing import List
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 def make_printv(verbose: bool):

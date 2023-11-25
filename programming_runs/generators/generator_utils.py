@@ -5,6 +5,8 @@ from typing import Union, List, Optional, Callable
 
 
 def generic_generate_func_impl(
+    retrieved_apis: str,
+    retrieved_functions: str,
     func_sig: str,
     model: ModelBase,
     strategy: str,
@@ -31,7 +33,7 @@ def generic_generate_func_impl(
 
     if model.is_chat:
         if strategy == "reflexion":
-            message = f"{reflexion_few_shot}\n[previous impl]:\n{add_code_block(prev_func_impl)}\n\n[unit test results from previous impl]:\n{feedback}\n\n[reflection on previous impl]:\n{self_reflection}\n\n[improved impl]:\n{func_sig}"
+            message = f"[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_functions]:\n{retrieved_functions}\n\n{reflexion_few_shot}\n[previous impl]:\n{add_code_block(prev_func_impl)}\n\n[unit test results from previous impl]:\n{feedback}\n\n[reflection on previous impl]:\n{self_reflection}\n\n[improved impl]:\n{func_sig}"
             prompt = f"{reflexion_chat_instruction}\n{code_block_instruction}"
             # func_bodies is a really bad name, as it can also be just 1 string
             print_messages(prompt, message)
@@ -41,8 +43,8 @@ def generic_generate_func_impl(
                     content=prompt,
                 ),
                 Message(
-                    role="user", # TODO: check this
-                    content=reflexion_few_shot,
+                    role="user",  # TODO: check this
+                    content=f"[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_functions]:\n{retrieved_functions}\n\n{reflexion_few_shot}",
                 ),
                 Message(
                     role="assistant",
@@ -61,10 +63,12 @@ def generic_generate_func_impl(
                     content=f"[improved impl]:\n{func_sig}",
                 ),
             ]
-            func_bodies = model.generate_chat(messages=messages, num_comps=num_comps, temperature=temperature)
+            func_bodies = model.generate_chat(
+                messages=messages, num_comps=num_comps, temperature=temperature)
         else:
             system_prompt = f"{simple_chat_instruction}\n{code_block_instruction}"
-            print_messages(system_prompt, func_sig)
+            print_messages(
+                system_prompt, f'[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_functions]:\n{retrieved_functions}\n\n{func_sig}')
             messages = [
                 Message(
                     role="system",
@@ -72,10 +76,11 @@ def generic_generate_func_impl(
                 ),
                 Message(
                     role="user",
-                    content=func_sig,
+                    content=f'[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_functions]:\n{retrieved_functions}\n\n{func_sig}',
                 ),
             ]
-            func_bodies = model.generate_chat(messages=messages, num_comps=num_comps, temperature=temperature)
+            func_bodies = model.generate_chat(
+                messages=messages, num_comps=num_comps, temperature=temperature)
     else:
         if strategy == "reflexion":
             prompt = f"{reflexion_completion_instruction}\n{add_code_block(prev_func_impl)}\n\nunit tests:\n{feedback}\n\nhint:\n{self_reflection}\n\n# improved implementation\n{func_sig}\n{code_block_instruction}"
@@ -89,11 +94,17 @@ def generic_generate_func_impl(
     if num_comps == 1:
         assert isinstance(func_bodies, str)
         func_body_str = parse_code_block(func_bodies)
+        # breakpoint()
+        # func_sig = '\n'.join(func_sig.split('\n')[:-1]) + '\n'
+        # func_body_str = func_body_str.split('\n')[-1]
+        if strategy == "simple":
+            func_body_str = func_sig + func_body_str
         print_generated_func_body(func_body_str)
         return func_body_str
 
     else:
-        func_bodies = [parse_code_block(func_body) for func_body in func_bodies]
+        func_bodies = [parse_code_block(func_body)
+                       for func_body in func_bodies]
         print_generated_func_body("\n\n".join(func_bodies))
         return func_bodies
 
@@ -193,6 +204,7 @@ def sample_n_random(items: List[str], n: int) -> List[str]:
         return items
     return random.sample(items, n)
 
+
 def print_messages(system_message_text: str, user_message_text: str) -> None:
     print(f"""----------------------- SYSTEM MESSAGE -----------------------)
 {system_message_text}
@@ -201,6 +213,7 @@ def print_messages(system_message_text: str, user_message_text: str) -> None:
 {user_message_text}
 ----------------------------------------------
 """, flush=True)
+
 
 def print_generated_func_body(func_body_str: str) -> None:
     print(f"""--------------------- GENERATED FUNC BODY ---------------------

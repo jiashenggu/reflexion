@@ -12,37 +12,62 @@ PY_REFLEXION_COMPLETION_INSTRUCTION = "You are a Python writing assistant. You w
 PY_SELF_REFLECTION_COMPLETION_INSTRUCTION = "You are a Python writing assistant. You will be given a function implementation and a series of unit tests. Your goal is to write a few sentences to explain why your implementation is wrong as indicated by the tests. You will need this as a hint when you try again later. Only provide the few sentence description in your answer, not the implementation.\n\n-----"
 USE_PYTHON_CODEBLOCK_INSTRUCTION = "Use a Python code block to write your response. For example:\n```python\nprint('Hello world!')\n```"
 
-PY_SIMPLE_CHAT_INSTRUCTION = "You are an AI that only responds with python code, NOT ENGLISH. You will be given a function signature and its docstring by the user. Write your full implementation (restate the function signature)."
-PY_SIMPLE_CHAT_INSTRUCTION_V2 = "You are an AI that only responds with only python code. You will be given a function signature and its docstring by the user. Write your full implementation (restate the function signature)."
+# PY_SIMPLE_CHAT_INSTRUCTION = "You are an AI that only responds with python code, NOT ENGLISH. You will be given a function signature and its docstring by the user. Write your full implementation (restate the function signature)."
+PY_SIMPLE_CHAT_INSTRUCTION = "You are an AI that only responds with python code, NOT ENGLISH. You will be given a few APIs, some code and its docstring by the user. Your objective is to continue the code in line with the provided docstring, ensuring it passes all unit tests without duplicating any part of the existing implementation."
+# PY_SIMPLE_CHAT_INSTRUCTION_V2 = "You are an AI that only responds with only python code. You will be given a function signature and its docstring by the user. Write your full implementation (restate the function signature)."
+# PY_REFLEXION_CHAT_INSTRUCTION = "You are an AI Python assistant. You will be given your past function implementation, a series of unit tests, and a hint to change the implementation appropriately. Write your full implementation (restate the function signature)."
 PY_REFLEXION_CHAT_INSTRUCTION = "You are an AI Python assistant. You will be given your past function implementation, a series of unit tests, and a hint to change the implementation appropriately. Write your full implementation (restate the function signature)."
-PY_REFLEXION_CHAT_INSTRUCTION_V2 = "You are an AI Python assistant. You will be given your previous implementation of a function, a series of unit tests results, and your self-reflection on your previous implementation. Write your full implementation (restate the function signature)."
+# PY_REFLEXION_CHAT_INSTRUCTION_V2 = "You are an AI Python assistant. You will be given your previous implementation of a function, a series of unit tests results, and your self-reflection on your previous implementation. Write your full implementation (restate the function signature)."
+# PY_REFLEXION_FEW_SHOT_ADD = '''Example 1:
+# [previous impl]:
+# ```python
+# def add(a: int, b: int) -> int:
+#     """
+#     Given integers a and b, return the total value of a and b.
+#     """
+#     return a - b
+# ```
+
+# [unit test results from previous impl]:
+# Tested passed:
+
+# Tests failed:
+# assert add(1, 2) == 3 # output: -1
+# assert add(1, 2) == 4 # output: -1
+
+# [reflection on previous impl]:
+# The implementation failed the test cases where the input integers are 1 and 2. The issue arises because the code does not add the two integers together, but instead subtracts the second integer from the first. To fix this issue, we should change the operator from `-` to `+` in the return statement. This will ensure that the function returns the correct output for the given input.
+
+# [improved impl]:
+# ```python
+# def add(a: int, b: int) -> int:
+#     """
+#     Given integers a and b, return the total value of a and b.
+#     """
+#     return a + b
+# ```
+# '''
 PY_REFLEXION_FEW_SHOT_ADD = '''Example 1:
 [previous impl]:
 ```python
-def add(a: int, b: int) -> int:
-    """
-    Given integers a and b, return the total value of a and b.
-    """
-    return a - b
+# Given integers a and b, return the total value of a and b.
+total_value = a - b
 ```
 
 [unit test results from previous impl]:
 Tested passed:
 
 Tests failed:
-assert add(1, 2) == 3 # output: -1
-assert add(1, 2) == 4 # output: -1
+assert total_value == 3 # output: -1
+assert total_value == 4 # output: -1
 
 [reflection on previous impl]:
 The implementation failed the test cases where the input integers are 1 and 2. The issue arises because the code does not add the two integers together, but instead subtracts the second integer from the first. To fix this issue, we should change the operator from `-` to `+` in the return statement. This will ensure that the function returns the correct output for the given input.
 
 [improved impl]:
 ```python
-def add(a: int, b: int) -> int:
-    """
-    Given integers a and b, return the total value of a and b.
-    """
-    return a + b
+# Given integers a and b, return the total value of a and b.
+total_value = a + b
 ```
 '''
 
@@ -257,6 +282,8 @@ class PyGenerator(Generator):
 
     def func_impl(
         self,
+        retrieved_apis: str,
+        retrieved_functions: str,
         func_sig: str,
         model: ModelBase,
         strategy: str,
@@ -266,7 +293,10 @@ class PyGenerator(Generator):
         num_comps: int = 1,
         temperature: float = 0.0,
     ) -> Union[str, List[str]]:
+        # retrieved_apis = retrieved_apis + "When using an API where the first argument is a 'datapipe', you can invoke the API using the format 'A.api_name()' instead of 'api_name(A)'. For example, if you have a data pipe named 'dataPipe' and you want to use an API called 'processData', instead of writing 'processData(dataPipe)', you can simply write 'dataPipe.processData()'."
         return generic_generate_func_impl(
+            retrieved_apis=retrieved_apis,
+            retrieved_functions=retrieved_functions,
             func_sig=func_sig,
             model=model,
             strategy=strategy,

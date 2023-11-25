@@ -15,7 +15,8 @@ def parse_code_block(string: str, lang: str) -> Optional[str]:
     if match:
         return match.group(1)
 
-    return parse_first_func(string, lang)
+    # return parse_first_func(string, lang)
+    return string
 
 
 def parse_first_func(code: str, lang: str) -> Optional[str]:

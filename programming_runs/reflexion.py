@@ -36,8 +36,30 @@ def run_reflexion(
             else:
                 tests_i = gen.internal_tests(item["prompt"], model, 1)
 
+            dataset_name = item["task_id"].split(
+                "/")[0].replace("Eval", "").lower()
             # first attempt
-            cur_func_impl = gen.func_impl(item["prompt"], model, "simple")
+
+            retrieved_apis, code_prefix = item["prompt"].split("# [end]")
+            retrieved_apis = retrieved_apis.split("# [start]")[1].strip()
+            retrieved_functions = ""
+            apis = retrieved_apis.split("\n")
+            code_prefix = code_prefix.strip()
+            cur_func_impl = gen.func_impl(
+                retrieved_apis, retrieved_functions, code_prefix, model, "simple")
+            # import re
+
+            # # Define the pattern to extract content between # [start] and # [end]
+            # pattern = r'# \[start\](.*?)# \[end\]'
+
+            # # Extracting the content
+            # matched_content = re.search(pattern, item["prompt"], re.DOTALL)
+
+            # if matched_content:
+            #     apis = matched_content.group(1).strip().split("\n")
+            # else:
+            #     apis = []
+
             implementations.append(cur_func_impl)
             assert isinstance(cur_func_impl, str)
             is_passing, feedback, _ = exe.execute(cur_func_impl, tests_i)
@@ -59,16 +81,50 @@ def run_reflexion(
                 reflection = gen.self_reflection(
                     cur_func_impl, cur_feedback, model)
                 reflections += [reflection]
+                # pattern = r"# \[start\].*?# \[end\]"
+                # update_prompt = item["prompt"].replace(pattern, replacement, 1)
 
-                # apply self-reflection in the next attempt
+                retrieved_apis, code_prefix = item["prompt"].split("# [end]")
+                retrieved_apis = retrieved_apis.split("# [start]")[1].strip()
+
+                from retrieval import get_topk_apis
+                json_file_paths = [
+                    f"/home/gujiasheng/reflexion/api_coder/{dataset_name}_api.json"]
+                # json_file_paths = [f"/home/gujiasheng/reflexion/api_coder/{dataset_name}_api.json",
+                #                    f"/home/gujiasheng/reflexion/api_coder/{dataset_name}_github.json"]
+                retrieved_apis = get_topk_apis(
+                    json_file_paths, cur_func_impl+cur_feedback, top_k=5)
+
+                # from run_live import retrieve_repo
+                # args = {
+                #     "query": cur_func_impl+cur_feedback,
+                #     "prompt_style": "style-3",
+                #     "issue_url": ["https://github.com/pytorch/data/issues/1169"],
+                #     "base_commit": [None],
+                #     "max_context_length": 2000,
+                #     "document_encoding_func": "file_name_and_contents",
+                #     "root_dir": "./run_live_data",
+                #     "include_readmes": False
+                # }
+
+                # instance = retrieve_repo(**args)
+                retrieved_functions = ""
+                # for v in instance['file_contents'].values():
+                #     retrieved_functions += v + "\n\n\n"
+
+                apis = retrieved_apis.split("\n")
+                code_prefix = code_prefix.strip()
                 cur_func_impl = gen.func_impl(
-                    func_sig=item["prompt"],
+                    retrieved_apis=retrieved_apis,
+                    retrieved_functions=retrieved_functions,
+                    func_sig=code_prefix,
                     model=model,
                     strategy="reflexion",
                     prev_func_impl=cur_func_impl,
                     feedback=cur_feedback,
                     self_reflection=reflection,
                 )
+
                 implementations.append(cur_func_impl)
                 assert isinstance(cur_func_impl, str)
 
@@ -93,8 +149,9 @@ def run_reflexion(
         item["is_solved"] = is_solved
         item["reflections"] = reflections
         item["implementations"] = implementations
-        item["test_feedback"] = test_feedback
+        item["internal_test_feedback"] = test_feedback
         item["solution"] = cur_func_impl
+        item["apis"] = apis
         write_jsonl(log_path, [item], append=True)
 
         print_v(

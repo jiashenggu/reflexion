@@ -1,3 +1,7 @@
+api_coder
+programming_runs/root
+programming_runs/benchmarks
+*/run_live_data
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
