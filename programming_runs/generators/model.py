@@ -8,6 +8,10 @@ from tenacity import (
 )
 import openai
 
+openai.api_base = "https://api.lingyiwanwu.com/v1"
+openai.api_key = "pretrain-eval"
+openai.organization = "org-BeUS8HDM7fYddefoIrL5ONrO"
+
 MessageRole = Literal["system", "user", "assistant"]
 
 

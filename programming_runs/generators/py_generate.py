@@ -294,6 +294,8 @@ class PyGenerator(Generator):
         temperature: float = 0.0,
     ) -> Union[str, List[str]]:
         # retrieved_apis = retrieved_apis + "When using an API where the first argument is a 'datapipe', you can invoke the API using the format 'A.api_name()' instead of 'api_name(A)'. For example, if you have a data pipe named 'dataPipe' and you want to use an API called 'processData', instead of writing 'processData(dataPipe)', you can simply write 'dataPipe.processData()'."
+        # retrieved_apis = ""
+        # retrieved_functions = ""
         return generic_generate_func_impl(
             retrieved_apis=retrieved_apis,
             retrieved_functions=retrieved_functions,

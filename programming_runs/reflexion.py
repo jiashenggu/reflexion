@@ -3,6 +3,7 @@ from executors import executor_factory
 from generators import generator_factory, model_factory
 
 from typing import List
+from retrieval import Retriever
 
 
 def run_reflexion(
@@ -23,28 +24,41 @@ def run_reflexion(
 
     num_items = len(dataset)
     num_success = resume_success_count(dataset)
+    # retriever = Retriever("bm25")
+    retriever = Retriever("embedding", '/ML-A100/home/gujiasheng/bge-small-en')
+    dataset_name = dataset[0]["task_id"].split(
+                "/")[0].replace("Eval", "").lower()
+    json_file_paths = [
+                    f"/ML-A100/home/gujiasheng/reflexion/api_coder/{dataset_name}_api_1.json"]
+    # json_file_paths = [f"/ML-A100/home/gujiasheng/reflexion/api_coder/{dataset_name}_api.json",
+    #                    f"/ML-A100/home/gujiasheng/reflexion/api_coder/{dataset_name}_github.json"]
     for i, item in enumerate_resume(dataset, log_path):
         cur_pass = 0
         is_solved = False
         reflections = []
         implementations = []
         test_feedback = []
+        apis = []
         cur_func_impl = ""
         while cur_pass < pass_at_k and not is_solved:
             if is_leetcode:
                 tests_i = item['visible_tests']
             else:
-                tests_i = gen.internal_tests(item["prompt"], model, 1)
+                # tests_i = gen.internal_tests(item["prompt"], model, 1)
+                tests_i = []
 
-            dataset_name = item["task_id"].split(
-                "/")[0].replace("Eval", "").lower()
+            
             # first attempt
 
             retrieved_apis, code_prefix = item["prompt"].split("# [end]")
             retrieved_apis = retrieved_apis.split("# [start]")[1].strip()
-            retrieved_functions = ""
-            apis = retrieved_apis.split("\n")
+            retrieved_apis = retriever.get_topk_apis(
+                    json_file_paths, code_prefix, top_k=5)
             code_prefix = code_prefix.strip()
+            item["prompt"] = code_prefix
+            retrieved_functions = ""
+            apis.append(retrieved_apis.split("\n"))
+
             cur_func_impl = gen.func_impl(
                 retrieved_apis, retrieved_functions, code_prefix, model, "simple")
             # import re
@@ -67,10 +81,9 @@ def run_reflexion(
 
             # if solved, exit early
             if is_passing:
-                is_passing = exe.evaluate(
+                is_solved = exe.evaluate(
                     item["entry_point"], cur_func_impl, item["test"], timeout=10)
-                is_solved = is_passing
-                num_success += int(is_passing)
+                num_success += int(is_solved)
                 break
 
             # use self-reflection to iteratively improve
@@ -84,15 +97,11 @@ def run_reflexion(
                 # pattern = r"# \[start\].*?# \[end\]"
                 # update_prompt = item["prompt"].replace(pattern, replacement, 1)
 
-                retrieved_apis, code_prefix = item["prompt"].split("# [end]")
-                retrieved_apis = retrieved_apis.split("# [start]")[1].strip()
+                
+                
 
-                from retrieval import get_topk_apis
-                json_file_paths = [
-                    f"/home/gujiasheng/reflexion/api_coder/{dataset_name}_api.json"]
-                # json_file_paths = [f"/home/gujiasheng/reflexion/api_coder/{dataset_name}_api.json",
-                #                    f"/home/gujiasheng/reflexion/api_coder/{dataset_name}_github.json"]
-                retrieved_apis = get_topk_apis(
+                # retriever = Retriever("embedding", '/ML-A100/home/gujiasheng/bge-small-en')
+                retrieved_apis = retriever.get_topk_apis(
                     json_file_paths, cur_func_impl+cur_feedback, top_k=5)
 
                 # from run_live import retrieve_repo
@@ -112,8 +121,8 @@ def run_reflexion(
                 # for v in instance['file_contents'].values():
                 #     retrieved_functions += v + "\n\n\n"
 
-                apis = retrieved_apis.split("\n")
-                code_prefix = code_prefix.strip()
+                apis.append(retrieved_apis.split("\n"))
+
                 cur_func_impl = gen.func_impl(
                     retrieved_apis=retrieved_apis,
                     retrieved_functions=retrieved_functions,
@@ -147,6 +156,14 @@ def run_reflexion(
             cur_pass += 1
 
         item["is_solved"] = is_solved
+        if is_solved:
+            print("----------------------------------------------")
+            print("Solved!")
+            print("----------------------------------------------")
+        else:
+            print("----------------------------------------------")
+            print("Not solved!")
+            print("----------------------------------------------")
         item["reflections"] = reflections
         item["implementations"] = implementations
         item["internal_test_feedback"] = test_feedback

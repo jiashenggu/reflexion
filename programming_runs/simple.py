@@ -29,6 +29,12 @@ def run_simple(
         is_solved = False
         cur_func_impl = ""
         while cur_pass < pass_at_k:
+            retrieved_apis, code_prefix = item["prompt"].split("# [end]")
+            retrieved_apis = retrieved_apis.split("# [start]")[1].strip()
+            retrieved_apis = retriever.get_topk_apis(
+                    json_file_paths, code_prefix, top_k=5)
+            code_prefix = code_prefix.strip()
+            item["prompt"] = code_prefix
             cur_func_impl = gen.func_impl(item["prompt"], model, "simple")
             assert isinstance(cur_func_impl, str)
             is_passing = exe.evaluate(item["entry_point"], cur_func_impl, item["test"], timeout = 20 if is_leetcode else 10)
