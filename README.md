@@ -102,14 +102,22 @@ For all questions, contact [noahshinn024@gmail.com](noahshinn024@gmail.com)
 }
 ```
 
-RAG coder
-## how to install pyserini
+# RAG coder
 ```
-conda create -n pyserini python=3.10 -y
+conda create -n RAG_coder python=3.10 -y
+```
+
+## how to install pyserini
+https://github.com/castorini/pyserini/blob/master/docs/installation.md
+```
 conda activate pyserini
 conda install -c conda-forge openjdk=11 maven -y
 pip install torch faiss-cpu
 pip install pyserini
+```
+```
+cd programming_runs
+pip install -r requirements.txt
 ```
 
 use run_reflexion.sh to do experiments

@@ -1,1 +1,0 @@
-需要装programming_runs/requirements.txt和主目录里的req.txt,还有https://github.com/castorini/pyserini/blob/master/docs/installation.md
