@@ -6,7 +6,7 @@ from typing import Union, List, Optional, Callable
 
 def generic_generate_func_impl(
     retrieved_apis: str,
-    retrieved_functions: str,
+    retrieved_source_code: str,
     func_sig: str,
     model: ModelBase,
     strategy: str,
@@ -33,7 +33,7 @@ def generic_generate_func_impl(
 
     if model.is_chat:
         if strategy == "reflexion":
-            message = f"[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_functions]:\n{retrieved_functions}\n\n{reflexion_few_shot}\n[previous impl]:\n{add_code_block(prev_func_impl)}\n\n[unit test results from previous impl]:\n{feedback}\n\n[reflection on previous impl]:\n{self_reflection}\n\n[improved impl]:\n{func_sig}"
+            message = f"[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_source_code]:\n{retrieved_source_code}\n\n{reflexion_few_shot}\n[previous impl]:\n{add_code_block(prev_func_impl)}\n\n[unit test results from previous impl]:\n{feedback}\n\n[reflection on previous impl]:\n{self_reflection}\n\n[improved impl]:\n{func_sig}"
             prompt = f"{reflexion_chat_instruction}\n{code_block_instruction}"
             # func_bodies is a really bad name, as it can also be just 1 string
             print_messages(prompt, message)
@@ -44,7 +44,7 @@ def generic_generate_func_impl(
                 ),
                 Message(
                     role="user",  # TODO: check this
-                    content=f"[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_functions]:\n{retrieved_functions}\n\n{reflexion_few_shot}",
+                    content=f"[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_source_code]:\n{retrieved_source_code}\n\n{reflexion_few_shot}",
                 ),
                 Message(
                     role="assistant",
@@ -68,7 +68,7 @@ def generic_generate_func_impl(
         else:
             system_prompt = f"{simple_chat_instruction}\n{code_block_instruction}"
             print_messages(
-                system_prompt, f'[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_functions]:\n{retrieved_functions}\n\n{func_sig}')
+                system_prompt, f'[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_source_code]:\n{retrieved_source_code}\n\n{func_sig}')
             messages = [
                 Message(
                     role="system",
@@ -76,7 +76,7 @@ def generic_generate_func_impl(
                 ),
                 Message(
                     role="user",
-                    content=f'[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_functions]:\n{retrieved_functions}\n\n{func_sig}',
+                    content=f'[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_source_code]:\n{retrieved_source_code}\n\n{func_sig}',
                 ),
             ]
             func_bodies = model.generate_chat(
@@ -98,7 +98,10 @@ def generic_generate_func_impl(
         # func_sig = '\n'.join(func_sig.split('\n')[:-1]) + '\n'
         # func_body_str = func_body_str.split('\n')[-1]
         if strategy == "simple":
-            func_body_str = func_sig + func_body_str
+            if func_sig.rstrip().endswith("="):
+                func_body_str = func_sig + func_body_str
+            else:
+                func_body_str = func_sig + "\n" + func_body_str
         print_generated_func_body(func_body_str)
         return func_body_str
 
@@ -133,7 +136,7 @@ def generic_generate_internal_tests(
                     content=f"{test_generation_few_shot}\n\n[func signature]:\n{func_sig}\n\n[think]:"
                 )
             ]
-            output = model.generate_chat(messages=messages, max_tokens=1024)
+            output = model.generate_chat(messages=messages, max_tokens=512)
             print(f'React test generation output: {output}')
         else:
             messages = [
@@ -146,10 +149,10 @@ def generic_generate_internal_tests(
                     content=f"{test_generation_few_shot}\n\n[func signature]:\n{func_sig}\n\n[unit tests]:",
                 )
             ]
-            output = model.generate_chat(messages=messages, max_tokens=1024)
+            output = model.generate_chat(messages=messages, max_tokens=512)
     else:
         prompt = f'{test_generation_completion_instruction}\n\nfunc signature:\n{func_sig}\nunit tests:'
-        output = model.generate(prompt, max_tokens=1024)
+        output = model.generate(prompt, max_tokens=512)
     all_tests = parse_tests(output)  # type: ignore
     valid_tests = [test for test in all_tests if is_syntax_valid(test)]
 

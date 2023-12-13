@@ -31,6 +31,7 @@ from make_datasets.create_instance import (
 # from run_model import call_chat, call_anthropic
 import logging
 from argparse import ArgumentParser
+import json
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -45,10 +46,27 @@ def get_problem_statement(owner, repo, issue_num, ghapi, include_comments=False)
     if include_comments:
         all_comments = list(ghapi.issues.list_comments(owner, repo, issue_num))
         comments = [comment.body for comment in all_comments]
-        comment_text = "Comment: " if comments else "" + "\nComment:".join(comments)
+        comment_text = ("Comment: " if comments else "") + "\nComment:".join(comments) 
         issue_text += "\n" + comment_text
     return issue_text
 
+def download_repo_issues(owner, repo, ghapi):
+    repo_issues = ghapi.issues.list_for_repo(owner, repo, state="closed", per_page=100)
+    issue_dict = {}
+    for issue in repo_issues:
+        issue_text = "\n".join([issue.title if issue.title else "", issue.body if issue.body else ""])
+        issue_num = issue.number
+        # Solved issues may include comments that give answers away too much
+        all_comments = list(ghapi.issues.list_comments(owner, repo, issue_num))
+        comments = [comment.body for comment in all_comments]
+        comment_text = ("Comment: " if comments else "") + "\nComment:".join(comments)
+        issue_dict["issue_num"] = issue_num
+        issue_dict["issue_text"] = issue_text
+        issue_dict["comment_text"] = comment_text
+        
+    with open(f"{owner}_{repo}.json", "w") as file:
+        json.dump(issue_dict, file)
+    
 
 def get_readme_files(repo_path):
     files = list(Path(repo_path).iterdir())
@@ -168,52 +186,52 @@ def parse_issue_url(issue_url):
     return owner, repo, issue_num
 
 
-def main(
-    model_name,
-    prompt_style,
-    issue_url,
-    base_commit,
-    max_context_length,
-    document_encoding_func,
-    output_dir,
-    root_dir,
-    include_readmes,
-):
-    if base_commit is not None and len(issue_url) != len(base_commit):
-        raise ValueError(
-            f"Must provide either no base commits or one base commit per issue url"
-        )
-    if base_commit is None:
-        base_commit = [None] * len(issue_url)
-    gh_token = os.environ.get("GITHUB_TOKEN", None)
-    if gh_token is not None:
-        logger.warning(f'Using GitHub token: {"*" * 8}{gh_token[-4:]}')
-    gh = GhApi(token=gh_token)
-    tokenizer, tokenizer_func = TOKENIZER_FUNCS["cl100k"]
-    document_encoding_func = DOCUMENT_ENCODING_FUNCTIONS[document_encoding_func]
-    python = subprocess.check_output(["which", "python"]).decode("utf-8").strip()
-    outputs = list()
-    for issue, commit in tqdm(zip(issue_url, base_commit), total=len(issue_url)):
-        owner, repo, issue_num = parse_issue_url(issue)
-        problem_statement = get_problem_statement(owner, repo, int(issue_num), gh)
-        instance_id = f"{owner}__{repo}-{issue_num}"
-        logger.info(f"Creating instance {instance_id}")
-        instance = make_instance(
-            owner,
-            repo,
-            problem_statement,
-            commit,
-            root_dir,
-            gh_token,
-            document_encoding_func,
-            python,
-            instance_id,
-            tokenizer,
-            tokenizer_func,
-            prompt_style,
-            max_context_length,
-            include_readmes,
-        )
+# def main(
+#     model_name,
+#     prompt_style,
+#     issue_url,
+#     base_commit,
+#     max_context_length,
+#     document_encoding_func,
+#     output_dir,
+#     root_dir,
+#     include_readmes,
+# ):
+#     if base_commit is not None and len(issue_url) != len(base_commit):
+#         raise ValueError(
+#             f"Must provide either no base commits or one base commit per issue url"
+#         )
+#     if base_commit is None:
+#         base_commit = [None] * len(issue_url)
+#     gh_token = os.environ.get("GITHUB_TOKEN", None)
+#     if gh_token is not None:
+#         logger.warning(f'Using GitHub token: {"*" * 8}{gh_token[-4:]}')
+#     gh = GhApi(token=gh_token)
+#     tokenizer, tokenizer_func = TOKENIZER_FUNCS["cl100k"]
+#     document_encoding_func = DOCUMENT_ENCODING_FUNCTIONS[document_encoding_func]
+#     python = subprocess.check_output(["which", "python"]).decode("utf-8").strip()
+#     outputs = list()
+#     for issue, commit in tqdm(zip(issue_url, base_commit), total=len(issue_url)):
+#         owner, repo, issue_num = parse_issue_url(issue)
+#         problem_statement = get_problem_statement(owner, repo, int(issue_num), gh)
+#         instance_id = f"{owner}__{repo}-{issue_num}"
+#         logger.info(f"Creating instance {instance_id}")
+#         instance = make_instance(
+#             owner,
+#             repo,
+#             problem_statement,
+#             commit,
+#             root_dir,
+#             gh_token,
+#             document_encoding_func,
+#             python,
+#             instance_id,
+#             tokenizer,
+#             tokenizer_func,
+#             prompt_style,
+#             max_context_length,
+#             include_readmes,
+#         )
     #     logger.info(f"Calling model {model_name}")
     #     start = time.time()
     #     if model_name.startswith("gpt"):
@@ -284,6 +302,8 @@ def retrieve_repo(
     for issue, commit in tqdm(zip(issue_url, base_commit), total=len(issue_url)):
         owner, repo, issue_num = parse_issue_url(issue)
         # problem_statement = get_problem_statement(owner, repo, int(issue_num), gh)
+        if not os.path.exists(f"{owner}_{repo}.json"):
+            download_repo_issues(owner, repo, gh)
         problem_statement = query
         instance_id = f"{owner}__{repo}-{issue_num}"
         logger.info(f"Creating instance {instance_id}")
@@ -322,4 +342,4 @@ if __name__ == "__main__":
     parser.add_argument("--root_dir", type=str, default="./run_live_data")
     parser.add_argument("--include_readmes", type=string_to_bool, default=False)
     args = parser.parse_args()
-    main(**vars(args))
+    # main(**vars(args))

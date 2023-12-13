@@ -16,7 +16,7 @@ USE_PYTHON_CODEBLOCK_INSTRUCTION = "Use a Python code block to write your respon
 PY_SIMPLE_CHAT_INSTRUCTION = "You are an AI that only responds with python code, NOT ENGLISH. You will be given a few APIs, some code and its docstring by the user. Your objective is to continue the code in line with the provided docstring, ensuring it passes all unit tests without duplicating any part of the existing implementation."
 # PY_SIMPLE_CHAT_INSTRUCTION_V2 = "You are an AI that only responds with only python code. You will be given a function signature and its docstring by the user. Write your full implementation (restate the function signature)."
 # PY_REFLEXION_CHAT_INSTRUCTION = "You are an AI Python assistant. You will be given your past function implementation, a series of unit tests, and a hint to change the implementation appropriately. Write your full implementation (restate the function signature)."
-PY_REFLEXION_CHAT_INSTRUCTION = "You are an AI Python assistant. You will be given your past function implementation, a series of unit tests, and a hint to change the implementation appropriately. Write your full implementation (restate the function signature)."
+PY_REFLEXION_CHAT_INSTRUCTION = "You are an AI Python assistant. You will be given your past function implementation, a series of unit tests, and a hint to change the implementation appropriately. Write your full implementation (restate the import statements and the function signature)."
 # PY_REFLEXION_CHAT_INSTRUCTION_V2 = "You are an AI Python assistant. You will be given your previous implementation of a function, a series of unit tests results, and your self-reflection on your previous implementation. Write your full implementation (restate the function signature)."
 # PY_REFLEXION_FEW_SHOT_ADD = '''Example 1:
 # [previous impl]:
@@ -175,6 +175,9 @@ END EXAMPLES
 '''
 PY_SELF_REFLECTION_CHAT_INSTRUCTION = "You are a Python programming assistant. You will be given a function implementation and a series of unit tests. Your goal is to write a few sentences to explain why your implementation is wrong as indicated by the tests. You will need this as a hint when you try again later. Only provide the few sentence description in your answer, not the implementation."
 PY_SELF_REFLECTION_CHAT_INSTRUCTION_V2 = "You are a Python programming assistant. You will be given a function implementation and a series of unit test results. Your goal is to write a few sentences to explain why your implementation is wrong as indicated by the tests. You will need this as guidance when you try again later. Only provide the few sentence description in your answer, not the implementation. You will be given a few examples by the user."
+
+PY_SELF_REFLECTION_CHAT_INSTRUCTION_retrieval = "You are a Python programming assistant. You will be given a function implementation and a series of unit test results. Your goal is to write a query that will be used to retrieve related documentation and function implementations from a database. Only provide the query in your answer, not the implementation."
+
 PY_SELF_REFLECTION_FEW_SHOT = """Example 1:
 [function impl]:
 ```python
@@ -245,7 +248,7 @@ assert longest_subarray_with_sum_limit([1, -1, 2, -2, 3, -3], 2) == [1, -1, 2, -
 The implementation failed 4 out of the 7 test cases due to an IndexError. The issue stems from the while loop while current_sum + nums[right] <= target:, which directly accesses nums[right] without checking if right is within the bounds of the list. This results in a runtime error when right goes beyond the list length. To overcome this error, we need to add a bounds check for the right variable in the mentioned while loop. We can modify the loop condition to while right < len(nums) and current_sum + nums[right] <= target:. This change will ensure that we only access elements within the bounds of the list, thus avoiding the IndexError.
 END OF EXAMPLES
 """
-
+PY_SELF_REFLECTION_FEW_SHOT_retrieval = """"""
 PY_TEST_GENERATION_FEW_SHOT = """Examples:
 func signature:
 def add3Numbers(x, y, z):
@@ -279,11 +282,22 @@ class PyGenerator(Generator):
             add_code_block=lambda x: add_code_block(x, "python"),
             self_reflection_few_shot=PY_SELF_REFLECTION_FEW_SHOT
         )
-
+    
+    def self_reflection_retrieval(self, func: str, feedback: str, model: ModelBase) -> str:
+        return generic_generate_self_reflection(
+            func=func,
+            feedback=feedback,
+            model=model,
+            self_reflection_chat_instruction=PY_SELF_REFLECTION_CHAT_INSTRUCTION_retrieval,
+            self_reflection_completion_instruction=PY_SELF_REFLECTION_COMPLETION_INSTRUCTION,
+            add_code_block=lambda x: add_code_block(x, "python"),
+            self_reflection_few_shot=PY_SELF_REFLECTION_FEW_SHOT
+        )
+    
     def func_impl(
         self,
         retrieved_apis: str,
-        retrieved_functions: str,
+        retrieved_source_code: str,
         func_sig: str,
         model: ModelBase,
         strategy: str,
@@ -294,11 +308,11 @@ class PyGenerator(Generator):
         temperature: float = 0.0,
     ) -> Union[str, List[str]]:
         # retrieved_apis = retrieved_apis + "When using an API where the first argument is a 'datapipe', you can invoke the API using the format 'A.api_name()' instead of 'api_name(A)'. For example, if you have a data pipe named 'dataPipe' and you want to use an API called 'processData', instead of writing 'processData(dataPipe)', you can simply write 'dataPipe.processData()'."
-        # retrieved_apis = ""
-        # retrieved_functions = ""
+        retrieved_apis = ""
+        # retrieved_source_code = ""
         return generic_generate_func_impl(
             retrieved_apis=retrieved_apis,
-            retrieved_functions=retrieved_functions,
+            retrieved_source_code=retrieved_source_code,
             func_sig=func_sig,
             model=model,
             strategy=strategy,

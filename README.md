@@ -101,3 +101,18 @@ For all questions, contact [noahshinn024@gmail.com](noahshinn024@gmail.com)
       primaryClass={cs.AI}
 }
 ```
+
+RAG coder
+## how to install pyserini
+```
+conda create -n pyserini python=3.10 -y
+conda activate pyserini
+conda install -c conda-forge openjdk=11 maven -y
+pip install torch faiss-cpu
+pip install pyserini
+```
+
+use run_reflexion.sh to do experiments
+```
+bash run_reflexion.sh
+```
