@@ -9,8 +9,9 @@ from .executor_types import ExecuteResult, Executor
 from typing import List, Tuple, Optional
 
 
-cargo_harness_dir = os.path.join(os.path.dirname(
-    os.path.realpath(__file__)), "cargo_harness")
+cargo_harness_dir = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "cargo_harness"
+)
 
 
 def create_temp_project() -> Tuple[str, str]:
@@ -51,7 +52,9 @@ def write_to_file_toplevel(path: str, code: str):
         f.write(code)
 
 
-def run_with_timeout(cmd: str, tmp_cargo_path: str, timeout: int = 5, print_debug: bool = False) -> Optional[Tuple[str, str]]:
+def run_with_timeout(
+    cmd: str, tmp_cargo_path: str, timeout: int = 5, print_debug: bool = False
+) -> Optional[Tuple[str, str]]:
     """
     Runs the given command with a timeout. Produces a tuple of stdout and stderr.
     If the command times out, returns None.
@@ -61,8 +64,13 @@ def run_with_timeout(cmd: str, tmp_cargo_path: str, timeout: int = 5, print_debu
     signal.alarm(timeout)
 
     # run the command
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE, cwd=tmp_cargo_path)
+    p = subprocess.Popen(
+        cmd,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=tmp_cargo_path,
+    )
     try:
         out, err = p.communicate()
         # reset the timeout handler
@@ -87,14 +95,15 @@ def run_with_timeout(cmd: str, tmp_cargo_path: str, timeout: int = 5, print_debu
 class RsExecutor(Executor):
     def execute(self, func: str, tests: List[str], timeout: int = 5) -> ExecuteResult:
         # Combine function code and assert statement
-        func_test_list = [f'{func}\n{test}' for test in tests]
+        func_test_list = [f"{func}\n{test}" for test in tests]
 
         tmp_dir, temp_file = create_temp_project()
 
         # run cargo check --message-format=json
         write_to_file(temp_file, func)
         res = run_with_timeout(
-            "cargo check --message-format=json", tmp_dir, timeout=timeout)
+            "cargo check --message-format=json", tmp_dir, timeout=timeout
+        )
         assert res is not None, "Timeout in cargo check, wow"
 
         errs = grab_compile_errs(res[0])  # (check returns stdin)
@@ -165,7 +174,7 @@ class RsExecutor(Executor):
         Federico Cassano, John Gouwar, Daniel Nguyen, Sydney Nguyen, Luna Phipps-Costin, Donald Pinckney, Ming-Ho Yee, Yangtian Zi, Carolyn Jane Anderson, Molly Q Feldman, Arjun Guha, Michael Greenberg, Abhinav Jangda ).
         If you use this function please cite:
         @misc{cassano2022multiple,
-          title={MultiPL-E: A Scalable and Extensible Approach to Benchmarking Neural Code Generation}, 
+          title={MultiPL-E: A Scalable and Extensible Approach to Benchmarking Neural Code Generation},
           author={Federico Cassano and John Gouwar and Daniel Nguyen and Sydney Nguyen and Luna Phipps-Costin and Donald Pinckney and Ming-Ho Yee and Yangtian Zi and Carolyn Jane Anderson and Molly Q Feldman and Arjun Guha and Michael Greenberg and Abhinav Jangda},
           year={2022},
           eprint={2208.08227},
@@ -180,7 +189,11 @@ class RsExecutor(Executor):
         write_to_file_toplevel(tmp_path, func + test)
 
         res = run_with_timeout(
-            "cargo check --message-format=json", tmp_dir, timeout=timeout, print_debug=True)
+            "cargo check --message-format=json",
+            tmp_dir,
+            timeout=timeout,
+            print_debug=True,
+        )
         assert res is not None, "Timeout in cargo check, wow"
 
         errs = grab_compile_errs(res[0])  # (check returns stdin)
@@ -191,8 +204,7 @@ class RsExecutor(Executor):
             return False
 
         # compile and run the binary
-        res = run_with_timeout("cargo run", tmp_dir,
-                               timeout=timeout, print_debug=True)
+        res = run_with_timeout("cargo run", tmp_dir, timeout=timeout, print_debug=True)
         os.system(f"rm -rf {tmp_dir}")
 
         if res is None:
@@ -235,7 +247,7 @@ def revert_asserts(code: str) -> str:
     """
     normal = code.replace("assert_eq_nopanic!", "assert_eq!")
     # remove the macro definition
-    return normal[len(assert_no_panic):]
+    return normal[len(assert_no_panic) :]
 
 
 def indent_code(code: str, spaces: int = 4) -> str:
@@ -285,13 +297,17 @@ def grab_compile_errs(inp: str) -> List[CompileErr]:
         if line == "":
             continue
         o = json.loads(line)
-        if o is not None and o["reason"] == "compiler-message" and \
-                o["message"]["level"] == "error" and \
-                o["message"]["spans"] != []:
+        if (
+            o is not None
+            and o["reason"] == "compiler-message"
+            and o["message"]["level"] == "error"
+            and o["message"]["spans"] != []
+        ):
             rendered = o["message"]["rendered"]
             objs.append(CompileErr(rendered))
 
     return objs
+
 
 # assumes that the given input is the stderr of cargo run.
 # returns a list of failed assertions as RuntimeErr objects
@@ -306,13 +322,13 @@ def grab_runtime_errs(inp: str) -> List[RuntimeErr]:
         if "fatal runtime" in line:
             # we have a panic
             panic_idx = line.index("fatal runtime")
-            panic_reason = line[panic_idx + len("fatal runtime") + 1:]
+            panic_reason = line[panic_idx + len("fatal runtime") + 1 :]
         elif "panicked at" in line:
             panic_idx = line.index("panicked at")
             # strip source line if it exists
             if "src/main.rs" in line:
-                line = line[:line.index("src/main.rs")]
-            panic_reason = line[panic_idx + len("panicked at") + 1:]
+                line = line[: line.index("src/main.rs")]
+            panic_reason = line[panic_idx + len("panicked at") + 1 :]
         elif "left:" in line:
             split = line.split("`")
             if len(split) < 2:
@@ -327,8 +343,9 @@ def grab_runtime_errs(inp: str) -> List[RuntimeErr]:
             fileinto = line.split(",")[-1]
             line = int(fileinto.split(":")[1])
             column = int(fileinto.split(":")[2])
-            failed_asserts.append(RuntimeErr(
-                curr_left, curr_right, line, column, panic_reason))
+            failed_asserts.append(
+                RuntimeErr(curr_left, curr_right, line, column, panic_reason)
+            )
             curr_left = None
             panic_reason = None
 
@@ -367,6 +384,6 @@ if __name__ == "__main__":
     {"reason":"build-finished","success":false}
     """
 
-    assert(len(grab_compile_errs(test_compiletime)) == 1)
+    assert len(grab_compile_errs(test_compiletime)) == 1
     print(grab_runtime_errs(test_runtime))
-    assert(len(grab_runtime_errs(test_runtime)) == 4)
+    assert len(grab_runtime_errs(test_runtime)) == 4

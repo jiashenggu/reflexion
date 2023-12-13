@@ -84,7 +84,9 @@ def main(
 ):
     if push_to_hub_user is not None:
         hub_token = os.environ.get("HUGGING_FACE_HUB_TOKEN", None)
-        assert hub_token is not None, "Must provide HUGGING_FACE_HUB_TOKEN to push to the Hub"
+        assert (
+            hub_token is not None
+        ), "Must provide HUGGING_FACE_HUB_TOKEN to push to the Hub"
         assert output_dir is None, "Cannot provide output_dir if pushing to the Hub"
     if max_context_len is not None:
         assert tokenizer_name is not None
@@ -117,7 +119,7 @@ def main(
         dataset = load_dataset(dataset_name_or_path)
 
     split_instances = dict()
-    logger.info(f'Found {set(dataset.keys())} splits')
+    logger.info(f"Found {set(dataset.keys())} splits")
     if set(splits) - set(dataset.keys()) != set():
         raise ValueError(f"Unknown splits {set(splits) - set(dataset.keys())}")
     for split in splits:
@@ -150,7 +152,9 @@ def main(
     for split in split_instances:
         split_data[split] = {key: list() for key in columns}
         for instance in tqdm(
-            split_instances[split].values(), total=len(split_instances[split]), desc=f'Processing {split} instances',
+            split_instances[split].values(),
+            total=len(split_instances[split]),
+            desc=f"Processing {split} instances",
         ):
             datum = extract_fields(instance)
             if datum is None:
@@ -170,7 +174,9 @@ def main(
     for split in dataset:
         logger.info(f"Found {len(dataset[split])} {split} instances")
     if push_to_hub_user is not None:
-        dataset.push_to_hub(f'{push_to_hub_user}/{output_file}', use_auth_token=hub_token)
+        dataset.push_to_hub(
+            f"{push_to_hub_user}/{output_file}", use_auth_token=hub_token
+        )
     else:
         dataset.save_to_disk(output_file)
     logger.info(f"Finsihed saving to {output_file}")
@@ -196,9 +202,7 @@ if __name__ == "__main__":
         default=0.01,
         help="Ratio of the training set to use for validation.",
     )
-    parser.add_argument(
-        "--output_dir", type=str, help="Path to the output directory."
-    )
+    parser.add_argument("--output_dir", type=str, help="Path to the output directory.")
     parser.add_argument(
         "--retrieval_file",
         type=str,

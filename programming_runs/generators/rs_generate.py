@@ -1,6 +1,10 @@
 from generators.model import ModelBase
 from .generator_types import Generator
-from .generator_utils import generic_generate_func_impl, generic_generate_internal_tests, generic_generate_self_reflection
+from .generator_utils import (
+    generic_generate_func_impl,
+    generic_generate_internal_tests,
+    generic_generate_self_reflection,
+)
 from .parse import parse_code_block, add_code_block
 
 from typing import List, Optional, Union
@@ -8,7 +12,7 @@ from typing import List, Optional, Union
 RS_SIMPLE_COMPLETION_INSTRUCTION = "// Write the body of this function only."
 RS_REFLEXION_COMPLETION_INSTRUCTION = "You are a Rust writing assistant. You will be given your past function implementation, a series of unit tests, and a hint to change the implementation appropriately. Write your full implementation (restate the function signature).\n\n-----"
 RS_SELF_REFLECTION_COMPLETION_INSTRUCTION = "You are a Rust writing assistant. You will be given a function implementation and a series of unit tests. Your goal is to write a few sentences to explain why your implementation is wrong as indicated by the tests. You will need this as a hint when you try again later. Only provide the few sentence description in your answer, not the implementation.\n\n-----"
-USE_RUST_CODEBLOCK_INSTRUCTION = "Use a Rust code block to write your response. For example:\n```rust\nfn main() {\n    println!(\"Hello\");\n}\n```"
+USE_RUST_CODEBLOCK_INSTRUCTION = 'Use a Rust code block to write your response. For example:\n```rust\nfn main() {\n    println!("Hello");\n}\n```'
 
 RS_SIMPLE_CHAT_INSTRUCTION = "You are an AI that only responds with Rust code, NOT ENGLISH. You will be given a function signature and its docstring by the user. Write your full implementation (restate the function signature)."
 RS_REFLEXION_CHAT_INSTRUCTION = "You are an AI Rust assistant. You will be given your past function implementation, a series of unit tests, and a hint to change the implementation appropriately. Write your full implementation (restate the function signature)."
@@ -17,7 +21,7 @@ RS_SELF_REFLECTION_CHAT_INSTRUCTION = "You are a Rust programming assistant. You
 RS_REFLEXION_COMPLETION_INSTRUCTION = "You are a Rust programming assistant. You will be given your past function implementation, a series of unit tests, and a hint to change the implementation appropriately. Apply the changes below by writing the body of this function only.\n\n-----"
 RS_SELF_REFLECTION_COMPLETION_INSTRUCTION = "You are a Rust programming assistant. You will be given a function implementation and a series of unit tests. Your goal is to write a few sentences to explain why your implementation is wrong as indicated by the tests. You will need this as a hint when you try again later. Only provide the few sentence description in your answer, not the implementation.\n\n-----"
 
-RS_REFLEXION_FEW_SHOT_ADD = '''Example 1:
+RS_REFLEXION_FEW_SHOT_ADD = """Example 1:
 [previous impl]:
 ```rust
 fn add(a: i32, b: i32) -> i32 {
@@ -45,7 +49,7 @@ fn add(a: i32, b: i32) -> i32 {
 ```
 
 END EXAMPLES
-'''
+"""
 
 RS_TEST_GENERATION_FEW_SHOT = """For example:
 
@@ -63,7 +67,7 @@ assert_eq!(add3Numbers(-3, -2, -1), -6);
 assert_eq!(add3Numbers(0, 0, 0), 0);
 """
 
-RS_SELF_REFLECTION_FEW_SHOT = '''Example 1:
+RS_SELF_REFLECTION_FEW_SHOT = """Example 1:
 [function impl]:
 ```rust
 pub fn group_anagrams(strs: Vec<String>) -> Vec<Vec<String>> {
@@ -107,7 +111,7 @@ The implementation failed to group the anagrams together correctly. Instead, it 
 
 END EXAMPLES
 
-'''
+"""
 RS_TEST_GENERATION_COMPLETION_INSTRUCTION = f"""You are a Rust programming assistant, an AI coding assistant that can write unique, diverse, and intuitive unit tests for functions given the signature and docstring.
 
 {RS_TEST_GENERATION_FEW_SHOT}"""
@@ -127,6 +131,7 @@ def parse_tests(tests: str) -> List[str]:
     Parses the tests from a string.
     """
     return [test.strip() for test in tests.splitlines() if "assert" in test]
+
 
 # TODO: type-check generated unit tests?
 
@@ -173,13 +178,11 @@ class RsGenerator(Generator):
         )
 
     def internal_tests(
-            self,
-            func_sig: str,
-            model: ModelBase,
-            max_num_tests: int = 5
+        self, func_sig: str, model: ModelBase, max_num_tests: int = 5
     ) -> List[str]:
         def parse_tests(tests: str) -> List[str]:
             return [test + ";" for test in tests.split(";")]
+
         """
         Generates tests for a function.
         """
@@ -191,5 +194,5 @@ class RsGenerator(Generator):
             test_generation_chat_instruction=RS_TEST_GENERATION_CHAT_INSTRUCTION,
             test_generation_completion_instruction=RS_TEST_GENERATION_COMPLETION_INSTRUCTION,
             parse_tests=parse_tests,
-            is_syntax_valid=(lambda x: True)  # TODO: for now. typecheck maybe?
+            is_syntax_valid=(lambda x: True),  # TODO: for now. typecheck maybe?
         )

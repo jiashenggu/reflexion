@@ -15,7 +15,12 @@ import time
 from datetime import datetime
 from tqdm.auto import tqdm
 from tempfile import TemporaryDirectory
-from make_datasets.utils import ContextManager, string_to_bool, extract_diff, extract_minimal_patch
+from make_datasets.utils import (
+    ContextManager,
+    string_to_bool,
+    extract_diff,
+    extract_minimal_patch,
+)
 from make_datasets.bm25_retrieval import (
     make_index,
     clone_repo,
@@ -28,6 +33,7 @@ from make_datasets.create_instance import (
     make_code_text,
     ingest_files,
 )
+
 # from run_model import call_chat, call_anthropic
 import logging
 from argparse import ArgumentParser
@@ -46,15 +52,18 @@ def get_problem_statement(owner, repo, issue_num, ghapi, include_comments=False)
     if include_comments:
         all_comments = list(ghapi.issues.list_comments(owner, repo, issue_num))
         comments = [comment.body for comment in all_comments]
-        comment_text = ("Comment: " if comments else "") + "\nComment:".join(comments) 
+        comment_text = ("Comment: " if comments else "") + "\nComment:".join(comments)
         issue_text += "\n" + comment_text
     return issue_text
+
 
 def download_repo_issues(owner, repo, ghapi):
     repo_issues = ghapi.issues.list_for_repo(owner, repo, state="closed", per_page=100)
     issue_dict = {}
     for issue in repo_issues:
-        issue_text = "\n".join([issue.title if issue.title else "", issue.body if issue.body else ""])
+        issue_text = "\n".join(
+            [issue.title if issue.title else "", issue.body if issue.body else ""]
+        )
         issue_num = issue.number
         # Solved issues may include comments that give answers away too much
         all_comments = list(ghapi.issues.list_comments(owner, repo, issue_num))
@@ -63,10 +72,10 @@ def download_repo_issues(owner, repo, ghapi):
         issue_dict["issue_num"] = issue_num
         issue_dict["issue_text"] = issue_text
         issue_dict["comment_text"] = comment_text
-        
+
     with open(f"{owner}_{repo}.json", "w") as file:
         json.dump(issue_dict, file)
-    
+
 
 def get_readme_files(repo_path):
     files = list(Path(repo_path).iterdir())
@@ -121,9 +130,11 @@ def make_instance(
     logger.info(f"Cloning repo {owner}/{repo}")
     repo_dir = clone_repo(f"{owner}/{repo}", root_dir, token)
     if commit is None:
-        commit = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=repo_dir
-        ).decode("utf-8").strip()
+        commit = (
+            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo_dir)
+            .decode("utf-8")
+            .strip()
+        )
     logger.info(f"Buidling BM25 retrieval index for {owner}/{repo}@{commit}")
     index_dir = make_index(
         repo_dir,
@@ -232,46 +243,47 @@ def parse_issue_url(issue_url):
 #             max_context_length,
 #             include_readmes,
 #         )
-    #     logger.info(f"Calling model {model_name}")
-    #     start = time.time()
-    #     if model_name.startswith("gpt"):
-    #         import openai
-    #         openai.api_key = os.environ.get("OPENAI_API_KEY", None)
-    #         inputs = instance["text_inputs"]
-    #         response, _ = call_chat(
-    #             model_name, inputs, use_azure=False, temperature=0, top_p=1
-    #         )
-    #         completion = response.choices[0]["message"]["content"]
-    #         logger.info(f'Generated {response.usage.completion_tokens} tokens in {(time.time() - start):.2f} seconds')
-    #     else:
-    #         from anthropic import Anthropic
-    #         api_key = os.environ.get("ANTHROPIC_API_KEY", None)
-    #         anthropic = Anthropic(api_key=api_key)
-    #         response = call_anthropic(
-    #             inputs, anthropic, model_name, temperature=0, top_p=1
-    #         )
-    #         completion = response.completion
-    #     model_patch = extract_diff(completion)
-    #     minimal_patch = extract_minimal_patch(model_patch)
-    #     outputs.append(
-    #         {
-    #             "instance_id": instance_id,
-    #             "response": completion,
-    #             "problem_statement": problem_statement,
-    #             "text_inputs": inputs,
-    #             "model_patch": model_patch,
-    #             "minimal_patch": minimal_patch,
-    #         }
-    #     )
-    # os.makedirs(output_dir, exist_ok=True)
-    # output_file = Path(
-    #     output_dir,
-    #     f'{model_name}__{prompt_style}__{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.jsonl',
-    # )
-    # with open(output_file, "+a") as f:
-    #     for output in outputs:
-    #         print(json.dumps(output), file=f, flush=True)
-    # logger.info(f"Wrote output to {output_file}")
+#     logger.info(f"Calling model {model_name}")
+#     start = time.time()
+#     if model_name.startswith("gpt"):
+#         import openai
+#         openai.api_key = os.environ.get("OPENAI_API_KEY", None)
+#         inputs = instance["text_inputs"]
+#         response, _ = call_chat(
+#             model_name, inputs, use_azure=False, temperature=0, top_p=1
+#         )
+#         completion = response.choices[0]["message"]["content"]
+#         logger.info(f'Generated {response.usage.completion_tokens} tokens in {(time.time() - start):.2f} seconds')
+#     else:
+#         from anthropic import Anthropic
+#         api_key = os.environ.get("ANTHROPIC_API_KEY", None)
+#         anthropic = Anthropic(api_key=api_key)
+#         response = call_anthropic(
+#             inputs, anthropic, model_name, temperature=0, top_p=1
+#         )
+#         completion = response.completion
+#     model_patch = extract_diff(completion)
+#     minimal_patch = extract_minimal_patch(model_patch)
+#     outputs.append(
+#         {
+#             "instance_id": instance_id,
+#             "response": completion,
+#             "problem_statement": problem_statement,
+#             "text_inputs": inputs,
+#             "model_patch": model_patch,
+#             "minimal_patch": minimal_patch,
+#         }
+#     )
+# os.makedirs(output_dir, exist_ok=True)
+# output_file = Path(
+#     output_dir,
+#     f'{model_name}__{prompt_style}__{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.jsonl',
+# )
+# with open(output_file, "+a") as f:
+#     for output in outputs:
+#         print(json.dumps(output), file=f, flush=True)
+# logger.info(f"Wrote output to {output_file}")
+
 
 def retrieve_repo(
     # model_name,
@@ -323,6 +335,8 @@ def retrieve_repo(
             max_context_length,
             include_readmes,
         )
+
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--model_name", type=str)

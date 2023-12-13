@@ -8,11 +8,14 @@ TIMEOUT = 5  # seconds
 assert len(sys.argv) == 2, "Please provide a log file"
 LOG_PATH = sys.argv[1]
 
+
 def red_text(text: str) -> str:
     return f"\033[91m{text}\033[0m"
 
+
 def green_text(text: str) -> str:
     return f"\033[92m{text}\033[0m"
+
 
 def count_test_cases(test_str: str) -> int:
     # dumb way to do this but works
@@ -30,15 +33,18 @@ def validate_py_results(log_path: str):
             code = f'{item["prompt"]}{func_impl}\n\n{item["test"]}\n\ncheck({item["entry_point"]})'
             num_tests = count_test_cases(item["test"])
             try:
+
                 def handler(signum, frame):
                     nonlocal i
                     raise Exception("timeout on test case" + str(i))
 
                 signal.signal(signal.SIGALRM, handler)
                 signal.alarm(TIMEOUT)
-                exec(code, globals()) 
+                exec(code, globals())
                 signal.alarm(0)
-                green_text_out = green_text(f"passes {num_tests}/{num_tests} test cases")
+                green_text_out = green_text(
+                    f"passes {num_tests}/{num_tests} test cases"
+                )
                 print(f"Test {i}: {green_text_out}")
                 num_success += 1
             except Exception:
@@ -49,6 +55,7 @@ def validate_py_results(log_path: str):
             print(f"Test {i}: {red_text_out}")
     print(f"Summary: {num_success}/{len(data)} tests passed")
     print(f"Acc: {round(num_success/len(data), 3)} tests passed")
+
 
 if __name__ == "__main__":
     validate_py_results(LOG_PATH)

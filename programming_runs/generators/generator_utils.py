@@ -22,14 +22,18 @@ def generic_generate_func_impl(
     simple_completion_instruction: str,
     code_block_instruction: str,
     parse_code_block: Callable[[str], str],
-    add_code_block: Callable[[str], str]
+    add_code_block: Callable[[str], str],
 ) -> Union[str, List[str]]:
     if strategy != "reflexion" and strategy != "simple":
         raise ValueError(
-            f"Invalid strategy: given `{strategy}` but expected one of `reflexion` or `simple`")
-    if strategy == "reflexion" and (prev_func_impl is None or feedback is None or self_reflection is None):
+            f"Invalid strategy: given `{strategy}` but expected one of `reflexion` or `simple`"
+        )
+    if strategy == "reflexion" and (
+        prev_func_impl is None or feedback is None or self_reflection is None
+    ):
         raise ValueError(
-            f"Invalid arguments: given `strategy=reflexion` but `prev_func_impl`, `feedback`, or `self_reflection` is None")
+            f"Invalid arguments: given `strategy=reflexion` but `prev_func_impl`, `feedback`, or `self_reflection` is None"
+        )
 
     if model.is_chat:
         if strategy == "reflexion":
@@ -64,11 +68,14 @@ def generic_generate_func_impl(
                 ),
             ]
             func_bodies = model.generate_chat(
-                messages=messages, num_comps=num_comps, temperature=temperature)
+                messages=messages, num_comps=num_comps, temperature=temperature
+            )
         else:
             system_prompt = f"{simple_chat_instruction}\n{code_block_instruction}"
             print_messages(
-                system_prompt, f'[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_source_code]:\n{retrieved_source_code}\n\n{func_sig}')
+                system_prompt,
+                f"[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_source_code]:\n{retrieved_source_code}\n\n{func_sig}",
+            )
             messages = [
                 Message(
                     role="system",
@@ -76,20 +83,25 @@ def generic_generate_func_impl(
                 ),
                 Message(
                     role="user",
-                    content=f'[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_source_code]:\n{retrieved_source_code}\n\n{func_sig}',
+                    content=f"[retrieved_apis]:\n{retrieved_apis}\n\n[retrieved_source_code]:\n{retrieved_source_code}\n\n{func_sig}",
                 ),
             ]
             func_bodies = model.generate_chat(
-                messages=messages, num_comps=num_comps, temperature=temperature)
+                messages=messages, num_comps=num_comps, temperature=temperature
+            )
     else:
         if strategy == "reflexion":
             prompt = f"{reflexion_completion_instruction}\n{add_code_block(prev_func_impl)}\n\nunit tests:\n{feedback}\n\nhint:\n{self_reflection}\n\n# improved implementation\n{func_sig}\n{code_block_instruction}"
             func_bodies = model.generate(
-                prompt, num_comps=num_comps, temperature=temperature)
+                prompt, num_comps=num_comps, temperature=temperature
+            )
         else:
-            prompt = f"{simple_completion_instruction}\n{func_sig}\n{code_block_instruction}"
+            prompt = (
+                f"{simple_completion_instruction}\n{func_sig}\n{code_block_instruction}"
+            )
             func_bodies = model.generate(
-                prompt, num_comps=num_comps, temperature=temperature)
+                prompt, num_comps=num_comps, temperature=temperature
+            )
 
     if num_comps == 1:
         assert isinstance(func_bodies, str)
@@ -106,22 +118,21 @@ def generic_generate_func_impl(
         return func_body_str
 
     else:
-        func_bodies = [parse_code_block(func_body)
-                       for func_body in func_bodies]
+        func_bodies = [parse_code_block(func_body) for func_body in func_bodies]
         print_generated_func_body("\n\n".join(func_bodies))
         return func_bodies
 
 
 def generic_generate_internal_tests(
-        func_sig: str,
-        model: ModelBase,
-        max_num_tests: int,
-        test_generation_few_shot: str,
-        test_generation_chat_instruction: str,
-        test_generation_completion_instruction: str,
-        parse_tests: Callable[[str], List[str]],
-        is_syntax_valid: Callable[[str], bool],
-        is_react: bool = False
+    func_sig: str,
+    model: ModelBase,
+    max_num_tests: int,
+    test_generation_few_shot: str,
+    test_generation_chat_instruction: str,
+    test_generation_completion_instruction: str,
+    parse_tests: Callable[[str], List[str]],
+    is_syntax_valid: Callable[[str], bool],
+    is_react: bool = False,
 ) -> List[str]:
     """Generates tests for a function."""
     if model.is_chat:
@@ -133,11 +144,11 @@ def generic_generate_internal_tests(
                 ),
                 Message(
                     role="user",
-                    content=f"{test_generation_few_shot}\n\n[func signature]:\n{func_sig}\n\n[think]:"
-                )
+                    content=f"{test_generation_few_shot}\n\n[func signature]:\n{func_sig}\n\n[think]:",
+                ),
             ]
             output = model.generate_chat(messages=messages, max_tokens=512)
-            print(f'React test generation output: {output}')
+            print(f"React test generation output: {output}")
         else:
             messages = [
                 Message(
@@ -147,11 +158,11 @@ def generic_generate_internal_tests(
                 Message(
                     role="user",
                     content=f"{test_generation_few_shot}\n\n[func signature]:\n{func_sig}\n\n[unit tests]:",
-                )
+                ),
             ]
             output = model.generate_chat(messages=messages, max_tokens=512)
     else:
-        prompt = f'{test_generation_completion_instruction}\n\nfunc signature:\n{func_sig}\nunit tests:'
+        prompt = f"{test_generation_completion_instruction}\n\nfunc signature:\n{func_sig}\nunit tests:"
         output = model.generate(prompt, max_tokens=512)
     all_tests = parse_tests(output)  # type: ignore
     valid_tests = [test for test in all_tests if is_syntax_valid(test)]
@@ -160,13 +171,13 @@ def generic_generate_internal_tests(
 
 
 def generic_generate_self_reflection(
-        func: str,
-        feedback: str,
-        model: ModelBase,
-        self_reflection_chat_instruction: str,
-        self_reflection_completion_instruction: str,
-        add_code_block: Callable[[str], str],
-        self_reflection_few_shot: Optional[str] = None,
+    func: str,
+    feedback: str,
+    model: ModelBase,
+    self_reflection_chat_instruction: str,
+    self_reflection_completion_instruction: str,
+    add_code_block: Callable[[str], str],
+    self_reflection_few_shot: Optional[str] = None,
 ) -> str:
     if model.is_chat:
         if self_reflection_few_shot is not None:
@@ -177,11 +188,11 @@ def generic_generate_self_reflection(
                 ),
                 Message(
                     role="user",
-                    content=f'{self_reflection_few_shot}\n\n[function impl]:\n{add_code_block(func)}\n\n[unit test results]:\n{feedback}\n\n[self-reflection]:',
-                )
+                    content=f"{self_reflection_few_shot}\n\n[function impl]:\n{add_code_block(func)}\n\n[unit test results]:\n{feedback}\n\n[self-reflection]:",
+                ),
             ]
             reflection = model.generate_chat(messages=messages)
-            print(f'Self reflection output: {reflection}')
+            print(f"Self reflection output: {reflection}")
         else:
             messages = [
                 Message(
@@ -190,13 +201,14 @@ def generic_generate_self_reflection(
                 ),
                 Message(
                     role="user",
-                    content=f'[function impl]:\n{add_code_block(func)}\n\n[unit test results]:\n{feedback}\n\n[self-reflection]:',
-                )
+                    content=f"[function impl]:\n{add_code_block(func)}\n\n[unit test results]:\n{feedback}\n\n[self-reflection]:",
+                ),
             ]
             reflection = model.generate_chat(messages=messages)
     else:
         reflection = model.generate(
-            f'{self_reflection_completion_instruction}\n{add_code_block(func)}\n\n{feedback}\n\nExplanation:')
+            f"{self_reflection_completion_instruction}\n{add_code_block(func)}\n\n{feedback}\n\nExplanation:"
+        )
     return reflection  # type: ignore
 
 
@@ -209,16 +221,21 @@ def sample_n_random(items: List[str], n: int) -> List[str]:
 
 
 def print_messages(system_message_text: str, user_message_text: str) -> None:
-    print(f"""----------------------- SYSTEM MESSAGE -----------------------)
+    print(
+        f"""----------------------- SYSTEM MESSAGE -----------------------)
 {system_message_text}
 ----------------------------------------------
 ----------------------- USER MESSAGE -----------------------
 {user_message_text}
 ----------------------------------------------
-""", flush=True)
+""",
+        flush=True,
+    )
 
 
 def print_generated_func_body(func_body_str: str) -> None:
-    print(f"""--------------------- GENERATED FUNC BODY ---------------------
+    print(
+        f"""--------------------- GENERATED FUNC BODY ---------------------
 {func_body_str}
-------------------------------------------""")
+------------------------------------------"""
+    )

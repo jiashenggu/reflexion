@@ -12,7 +12,7 @@ def run_test_acc(
     pass_at_k: int,
     log_path: str,
     verbose: bool,
-    is_leetcode: bool = False
+    is_leetcode: bool = False,
 ) -> None:
     exe = executor_factory(language, is_leet=is_leetcode)
     gen = generator_factory(language)
@@ -43,5 +43,4 @@ def run_test_acc(
         item["is_solved"] = is_solved
         write_jsonl(log_path, [item], append=True)
 
-        print_v(
-            f'completed {i+1}/{num_items}: acc = {round(num_success/(i+1), 2)}')
+        print_v(f"completed {i+1}/{num_items}: acc = {round(num_success/(i+1), 2)}")

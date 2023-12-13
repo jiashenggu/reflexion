@@ -1,4 +1,5 @@
 from retrieve_source_code import retrieve_repo
+
 args = {
     "query": "good",
     "prompt_style": "style-3",
@@ -7,11 +8,11 @@ args = {
     "max_context_length": 4096,
     "document_encoding_func": "file_name_and_contents",
     "root_dir": "./run_live_data",
-    "include_readmes": False
+    "include_readmes": False,
 }
 
 instance = retrieve_repo(**args)
 retrieved_source_code = ""
-for v in instance['file_contents'].values():
+for v in instance["file_contents"].values():
     retrieved_source_code += v + "\n\n\n"
 print(retrieved_source_code)

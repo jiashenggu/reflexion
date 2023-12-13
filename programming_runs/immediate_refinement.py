@@ -39,7 +39,8 @@ def run_immediate_refinement(
             # if solved, exit early
             if is_passing:
                 is_passing = exe.evaluate(
-                    item["entry_point"], cur_func_impl, item["test"], timeout=10)
+                    item["entry_point"], cur_func_impl, item["test"], timeout=10
+                )
                 is_solved = is_passing
                 num_success += int(is_passing)
                 break
@@ -55,18 +56,18 @@ def run_immediate_refinement(
                     strategy="reflexion",
                     prev_func_impl=cur_func_impl,
                     feedback=cur_feedback,
-                    self_reflection="No self-reflection"
+                    self_reflection="No self-reflection",
                 )
                 assert isinstance(cur_func_impl, str)
 
                 # check if all internal unit tests pass
-                is_passing, cur_feedback, _ = exe.execute(
-                    cur_func_impl, tests_i)
+                is_passing, cur_feedback, _ = exe.execute(cur_func_impl, tests_i)
 
                 # if solved, check if it passes the real tests, exit early
                 if is_passing or cur_iter == max_iters - 1:
                     is_passing = exe.evaluate(
-                        item["entry_point"], cur_func_impl, item["test"], timeout=10)
+                        item["entry_point"], cur_func_impl, item["test"], timeout=10
+                    )
                     if is_passing:
                         item["solution"] = cur_func_impl
                         is_solved = True
@@ -77,12 +78,12 @@ def run_immediate_refinement(
             cur_pass += 1
 
         is_solved = exe.evaluate(
-            item["entry_point"], cur_func_impl, item["test"], timeout=10)
+            item["entry_point"], cur_func_impl, item["test"], timeout=10
+        )
 
         item["is_solved"] = is_solved
         item["reflections"] = reflections
         item["solution"] = cur_func_impl
         write_jsonl(log_path, [item], append=True)
 
-        print_v(
-            f'completed {i+1}/{num_items}: acc = {round(num_success/(i+1), 2)}')
+        print_v(f"completed {i+1}/{num_items}: acc = {round(num_success/(i+1), 2)}")

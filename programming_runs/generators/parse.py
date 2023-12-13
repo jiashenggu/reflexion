@@ -3,7 +3,7 @@ from typing import Optional
 
 
 def parse_code_block(string: str, lang: str) -> Optional[str]:
-    code_pattern = fr"```{lang}\n(.*?)\n```"
+    code_pattern = rf"```{lang}\n(.*?)\n```"
     match = re.search(code_pattern, string, re.DOTALL)
 
     if match:
@@ -43,7 +43,7 @@ def parse_first_func(code: str, lang: str) -> Optional[str]:
     if def_i == -1:
         return None
 
-    return "\n".join(code_lines[def_i:last_i+1]).rstrip("[/PYTHON]")
+    return "\n".join(code_lines[def_i : last_i + 1]).rstrip("[/PYTHON]")
 
 
 def add_code_block(string: str, lang: str) -> str:

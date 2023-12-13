@@ -1,6 +1,10 @@
 from generators.model import ModelBase, message_to_str
 from .generator_types import Generator
-from .generator_utils import generic_generate_func_impl, generic_generate_internal_tests, generic_generate_self_reflection
+from .generator_utils import (
+    generic_generate_func_impl,
+    generic_generate_internal_tests,
+    generic_generate_self_reflection,
+)
 
 from typing import Optional, List, Union
 import ast
@@ -47,7 +51,7 @@ PY_REFLEXION_CHAT_INSTRUCTION = "You are an AI Python assistant. You will be giv
 #     return a + b
 # ```
 # '''
-PY_REFLEXION_FEW_SHOT_ADD = '''Example 1:
+PY_REFLEXION_FEW_SHOT_ADD = """Example 1:
 [previous impl]:
 ```python
 # Given integers a and b, return the total value of a and b.
@@ -69,7 +73,7 @@ The implementation failed the test cases where the input integers are 1 and 2. T
 # Given integers a and b, return the total value of a and b.
 total_value = a + b
 ```
-'''
+"""
 
 PY_REFLEXION_FEW_SHOT = '''Example 1:
 [previous impl]:
@@ -280,10 +284,12 @@ class PyGenerator(Generator):
             self_reflection_chat_instruction=PY_SELF_REFLECTION_CHAT_INSTRUCTION,
             self_reflection_completion_instruction=PY_SELF_REFLECTION_COMPLETION_INSTRUCTION,
             add_code_block=lambda x: add_code_block(x, "python"),
-            self_reflection_few_shot=PY_SELF_REFLECTION_FEW_SHOT
+            self_reflection_few_shot=PY_SELF_REFLECTION_FEW_SHOT,
         )
-    
-    def self_reflection_retrieval(self, func: str, feedback: str, model: ModelBase) -> str:
+
+    def self_reflection_retrieval(
+        self, func: str, feedback: str, model: ModelBase
+    ) -> str:
         return generic_generate_self_reflection(
             func=func,
             feedback=feedback,
@@ -291,9 +297,9 @@ class PyGenerator(Generator):
             self_reflection_chat_instruction=PY_SELF_REFLECTION_CHAT_INSTRUCTION_retrieval,
             self_reflection_completion_instruction=PY_SELF_REFLECTION_COMPLETION_INSTRUCTION,
             add_code_block=lambda x: add_code_block(x, "python"),
-            self_reflection_few_shot=PY_SELF_REFLECTION_FEW_SHOT
+            self_reflection_few_shot=PY_SELF_REFLECTION_FEW_SHOT,
         )
-    
+
     def func_impl(
         self,
         retrieved_apis: str,
@@ -331,9 +337,12 @@ class PyGenerator(Generator):
             add_code_block=lambda x: add_code_block(x, "python"),
         )
 
-    def internal_tests(self, func_sig: str, model: ModelBase, max_num_tests: int = 5) -> List[str]:
+    def internal_tests(
+        self, func_sig: str, model: ModelBase, max_num_tests: int = 5
+    ) -> List[str]:
         def parse_tests(tests: str) -> List[str]:
             return [test.strip() for test in tests.splitlines() if "assert" in test]
+
         """
         Generates tests for a function.
         """
@@ -404,19 +413,25 @@ def py_fix_indentation(func_body: str) -> str:
         2. first line not good
         3. entire body not good
     """
+
     def parse_indent_rec(f_body: str, cur_state: int) -> str:
         f_body = fix_markdown(f_body)
         if cur_state > 1:
             return f_body
-        code = f'{DUMMY_FUNC_SIG}\n{f_body}\n{DUMMY_FUNC_CALL}'
+        code = f"{DUMMY_FUNC_SIG}\n{f_body}\n{DUMMY_FUNC_CALL}"
         try:
             exec(code)
             return f_body
         except (IndentationError, SyntaxError):
-            p_func = handle_first_line_indent if cur_state == 0 else handle_entire_body_indent
+            p_func = (
+                handle_first_line_indent
+                if cur_state == 0
+                else handle_entire_body_indent
+            )
             return parse_indent_rec(p_func(func_body), cur_state + 1)
         except Exception:
             return f_body
+
     return parse_indent_rec(func_body, 0)
 
 

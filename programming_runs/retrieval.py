@@ -11,6 +11,7 @@ from transformers import LlamaTokenizer
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "4,5"
 
+
 def cl100k(text, tokenizer):
     return tokenizer.encode(text, disallowed_special=())
 
@@ -26,6 +27,8 @@ TOKENIZER_FUNCS = {
     "llama": (LlamaTokenizer.from_pretrained("togethercomputer/LLaMA-2-7B-32K"), llama),
 }
 tokenizer, tokenizer_func = TOKENIZER_FUNCS["cl100k"]
+
+
 class Retriever:
     def __init__(self, retrieve_type, model_path=None, topk=5, topk_bm25=None):
         self.retrieve_type = retrieve_type
@@ -76,13 +79,17 @@ class Retriever:
         topk_texts = []
         token_count = 0
         k_limit = self.topk  # Set the maximum value of k to 3
-        for text_id, bm25_score in sorted_texts[:self.topk]:
+        for text_id, bm25_score in sorted_texts[: self.topk]:
             # Retrieve the corresponding text content
             text_content = next(
                 entry["text"] for entry in data if entry["text_id"] == text_id
             )
 
-            if token_count + len(tokenizer_func(text_content, tokenizer))<= max_context_length and len(topk_texts) < k_limit:
+            if (
+                token_count + len(tokenizer_func(text_content, tokenizer))
+                <= max_context_length
+                and len(topk_texts) < k_limit
+            ):
                 token_count += len(tokenizer_func(text_content, tokenizer))
                 topk_texts.append((text_content, text_id, bm25_score))
             else:
@@ -109,7 +116,7 @@ class Retriever:
                 json_file_paths, query, max_context_length
             )
             data = []
-            
+
             for text_content, text_id, _ in topk_bm25_texts:
                 entry = {}
                 entry["text_id"] = text_id
@@ -128,12 +135,16 @@ class Retriever:
         topk_texts = []
         token_count = 0
         k_limit = self.topk  # Set the maximum value of k to 5
-        for text_id, bm25_score in sorted_texts[:self.topk]:
+        for text_id, bm25_score in sorted_texts[: self.topk]:
             # Retrieve the corresponding text content
             text_content = next(
                 entry["text"] for entry in data if entry["text_id"] == text_id
             )
-            if token_count + len(tokenizer_func(text_content, tokenizer))<= max_context_length and len(topk_texts) < k_limit:
+            if (
+                token_count + len(tokenizer_func(text_content, tokenizer))
+                <= max_context_length
+                and len(topk_texts) < k_limit
+            ):
                 token_count += len(tokenizer_func(text_content, tokenizer))
                 topk_texts.append((text_content, text_id, bm25_score))
             else:

@@ -1,7 +1,13 @@
 # Usage: python evaluate_leet_results.py <lang> <input_log_path> <output_log_path>
 from executors.leetcode_env.leetcode_env.environment import LeetCodeEnv
-from executors.leetcode_env.leetcode_env.leetcode_types import LeetCodeSubmission, ProgrammingLanguage
-from executors.leetcode_env.leetcode_env.utils import PySubmissionFormatter, RsSubmissionFormatter
+from executors.leetcode_env.leetcode_env.leetcode_types import (
+    LeetCodeSubmission,
+    ProgrammingLanguage,
+)
+from executors.leetcode_env.leetcode_env.utils import (
+    PySubmissionFormatter,
+    RsSubmissionFormatter,
+)
 from utils import read_jsonl
 import sys
 
@@ -29,7 +35,6 @@ env = LeetCodeEnv()
 for line in lines:
     line["evaluations"] = []
     for impl in line["implementations"]:
-        
         submission = LeetCodeSubmission(
             code=formatter.to_leetcode(impl),
             lang=lang,
@@ -38,14 +43,13 @@ for line in lines:
 
         status, reward, done, info = env.step(submission)
 
-        line["evaluations"].append({
-            "status": status,
-            "reward": reward,
-            "done": done,
-            "info": info,
-        })
+        line["evaluations"].append(
+            {
+                "status": status,
+                "reward": reward,
+                "done": done,
+                "info": info,
+            }
+        )
 
         env.reset()
-
-
-

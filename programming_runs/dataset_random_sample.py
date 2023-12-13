@@ -19,6 +19,7 @@ if __name__ == "__main__":
     import argparse
     import random
     import os
+
     # take in the input and output file names, with number of samples
     random.seed(os.urandom(1024))
     parser = argparse.ArgumentParser()

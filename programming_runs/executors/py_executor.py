@@ -7,16 +7,17 @@ from .executor_utils import function_with_timeout
 from typing import List
 from .executor_types import ExecuteResult, Executor
 
+
 class PyExecutor(Executor):
     def execute(self, func: str, tests: List[str], timeout: int = 5) -> ExecuteResult:
         # return ExecuteResult(True, "", [])
         # Combine function code and assert statement
-        imports = 'from typing import *'
-        
+        imports = "from typing import *"
+
         # func_test_list = [f'{imports}\n{func}\n{test}' for test in tests]
-        
+
         tests = ["# Check that the code itself is running correctly."]
-        func_test_list = [f'{imports}\n{func}']
+        func_test_list = [f"{imports}\n{func}"]
 
         # Run the tests and collect the results
         success_tests = []
@@ -25,7 +26,6 @@ class PyExecutor(Executor):
         num_tests = len(func_test_list)
         for i in range(num_tests):
             try:
-                
                 function_with_timeout(exec, (func_test_list[i], globals()), timeout)
 
                 success_tests += [tests[i]]
@@ -49,7 +49,7 @@ class PyExecutor(Executor):
         feedback += "\n\nTests failed:"
         for test in failed_tests:
             feedback += f"\n{test}"
-            
+
         return ExecuteResult(is_passing, feedback, state)
 
     def evaluate(self, name: str, func: str, test: str, timeout: int = 5) -> bool:
@@ -71,14 +71,16 @@ check({name if name!="none" else ""})
         except Exception:
             return False
 
+
 def get_call_str(assert_statement: str) -> str:
     ast_parsed = ast.parse(assert_statement)
     try:
-        call_str = ast_parsed.body[0].test.left # type: ignore
+        call_str = ast_parsed.body[0].test.left  # type: ignore
     except:
-        call_str = ast_parsed.body[0].test # type: ignore
+        call_str = ast_parsed.body[0].test  # type: ignore
 
     return astunparse.unparse(call_str).strip()
+
 
 def get_output(func: str, assert_statement: str, timeout: int = 5) -> str:
     try:
@@ -90,6 +92,7 @@ def get_output(func: str, assert_statement: str, timeout: int = 5) -> str:
         return "TIMEOUT"
     except Exception as e:
         return str(e)
+
 
 if __name__ == "__main__":
     pass

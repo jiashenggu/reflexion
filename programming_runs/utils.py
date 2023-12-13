@@ -7,7 +7,6 @@ import jsonlines
 from typing import List
 
 
-
 def make_printv(verbose: bool):
     def print_v(*args, **kwargs):
         if verbose:
@@ -15,6 +14,7 @@ def make_printv(verbose: bool):
             print(*args, **kwargs)
         else:
             pass
+
     return print_v
 
 
@@ -31,7 +31,7 @@ def read_jsonl(path: str) -> List[dict]:
 
 
 def write_jsonl(path: str, data: List[dict], append: bool = False):
-    with jsonlines.open(path, mode='a' if append else 'w') as writer:
+    with jsonlines.open(path, mode="a" if append else "w") as writer:
         for item in data:
             writer.write(item)
 
@@ -70,4 +70,3 @@ def resume_success_count(dataset) -> int:
         if "is_solved" in item and item["is_solved"]:
             count += 1
     return count
-

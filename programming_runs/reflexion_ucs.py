@@ -48,7 +48,7 @@ def run_reflexion_ucs(
     log_path: str,
     verbose: bool,
     expansion_factor: int,
-    is_leetcode: bool = False
+    is_leetcode: bool = False,
 ) -> None:
     exe = executor_factory(language, is_leet=is_leetcode)
     gen = generator_factory(language)
@@ -73,19 +73,18 @@ def run_reflexion_ucs(
             assert isinstance(cur_func_impl, str)  # num_comps of 1
             is_passing, feedback, state = exe.execute(cur_func_impl, tests_i)
 
-            debug_print(
-                f"first attempt: \n{cur_func_impl}\n{feedback}\n{state}")
+            debug_print(f"first attempt: \n{cur_func_impl}\n{feedback}\n{state}")
 
             # if solved, exit--pass_at_k 1 early
             if is_passing:
                 debug_print("solved at first attempt")
                 is_solved = exe.evaluate(
-                    item["entry_point"], cur_func_impl, item["test"])
+                    item["entry_point"], cur_func_impl, item["test"]
+                )
                 num_success += 1 if is_solved else 0
                 break
 
-            reflection = gen.self_reflection(
-                cur_func_impl, feedback, model)
+            reflection = gen.self_reflection(cur_func_impl, feedback, model)
             reflections.append(reflection)
 
             start = State(cur_func_impl, feedback, reflection, state)
@@ -109,7 +108,7 @@ def run_reflexion_ucs(
                     feedback=state.feedback,
                     self_reflection=state.reflection,
                     num_comps=expansion_factor,
-                    temperature=0.75
+                    temperature=0.75,
                 )
                 assert isinstance(new_funcs, list)
                 debug_print(f"generated num of funcs: {len(new_funcs)}")
@@ -123,22 +122,23 @@ def run_reflexion_ucs(
 
                     already_seen.add(new_func)
 
-                    is_passing, feedback, new_state = exe.execute(
-                        new_func, tests_i)
-                    debug_print(
-                        f"expanding: \n{new_func}\n{feedback}\n{new_state}")
+                    is_passing, feedback, new_state = exe.execute(new_func, tests_i)
+                    debug_print(f"expanding: \n{new_func}\n{feedback}\n{new_state}")
 
                     if is_passing:
                         # return immediately if solved
                         return set([(State(new_func, feedback, "", new_state), 0)])
 
-                    new_reflection = gen.self_reflection(
-                        new_func, feedback, model)
+                    new_reflection = gen.self_reflection(new_func, feedback, model)
                     reflections.append(new_reflection)
 
                     num_failing = len([x for x in new_state if not x])
                     new_states.add(
-                        (State(new_func, feedback, new_reflection, new_state), num_failing))
+                        (
+                            State(new_func, feedback, new_reflection, new_state),
+                            num_failing,
+                        )
+                    )
 
                 debug_print(f"returning new states: {new_states}")
 
@@ -157,14 +157,15 @@ def run_reflexion_ucs(
                 # the maximum number of nodes is 2^num_tests,
                 # which is 2^5 = 32
                 get_unique_id=lambda x: x.get_unique_id(),
-                when_none=when_none
+                when_none=when_none,
             )
             assert best is not None  # impossible due to our when_none
 
             debug_print("BEST CODE:\n\n\n")
             debug_print(best.code)
             is_passing = exe.evaluate(
-                item["entry_point"], best.code, item["test"], timeout=5)
+                item["entry_point"], best.code, item["test"], timeout=5
+            )
             if is_passing:
                 item["solution"] = best.code
                 is_solved = True
@@ -179,5 +180,4 @@ def run_reflexion_ucs(
         write_jsonl(log_path, [item], append=True)
 
         if verbose:
-            print(
-                f'completed {i+1}/{num_items}: acc = {round(num_success/(i+1), 2)}')
+            print(f"completed {i+1}/{num_items}: acc = {round(num_success/(i+1), 2)}")

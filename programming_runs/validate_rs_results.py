@@ -9,11 +9,14 @@ TIMEOUT = 5  # seconds
 assert len(sys.argv) == 2, "Please provide a log file"
 LOG_PATH = sys.argv[1]
 
+
 def red_text(text: str) -> str:
     return f"\033[91m{text}\033[0m"
 
+
 def green_text(text: str) -> str:
     return f"\033[92m{text}\033[0m"
+
 
 def count_test_cases(test_str: str) -> int:
     # dumb way to do this but works
@@ -31,9 +34,11 @@ def validate_rs_results(log_path: str):
             num_tests = count_test_cases(item["test"])
 
             rs_executor = RsExecutor()
-            res = rs_executor.evaluate(item["entry_point"], func_impl, item["test"])   
+            res = rs_executor.evaluate(item["entry_point"], func_impl, item["test"])
             if res:
-                green_text_out = green_text(f"passes {num_tests}/{num_tests} test cases")
+                green_text_out = green_text(
+                    f"passes {num_tests}/{num_tests} test cases"
+                )
                 print(f"Test {i}: {green_text_out}")
                 num_success += 1
             else:
@@ -44,6 +49,7 @@ def validate_rs_results(log_path: str):
             print(f"Test {i}: {red_text_out}")
     print(f"Summary: {num_success}/{len(data)} tests passed")
     print(f"Acc: {round(num_success/len(data), 3)} tests passed")
+
 
 if __name__ == "__main__":
     validate_rs_results(LOG_PATH)

@@ -234,7 +234,7 @@ def make_index(
     for relative_path, contents in documents.items():
         for i, function in enumerate(contents.split("\n\n\n")):
             functions[relative_path + f"____{i}"] = function
-    
+
     with open(documents_path, "w") as docfile:
         # for relative_path, contents in documents.items():
         for relative_path, contents in functions.items():

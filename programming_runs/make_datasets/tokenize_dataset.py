@@ -61,7 +61,13 @@ def extract_fields(instance, tokenizer_name, tokenizer, tokenizer_func, eos_toke
     cond_len = len(input_ids) - 1
     labels = [-100] * cond_len + label_ids
     assert len(inputs) == len(labels)
-    return {**instance, "input_ids": inputs, "labels": labels, "text": text_inputs, "patch": patch}
+    return {
+        **instance,
+        "input_ids": inputs,
+        "labels": labels,
+        "text": text_inputs,
+        "patch": patch,
+    }
 
 
 def extract_test_fields(instance, tokenizer_name, tokenizer, tokenizer_func, eos_token):
@@ -80,7 +86,13 @@ def extract_test_fields(instance, tokenizer_name, tokenizer, tokenizer_func, eos
     label_ids = tokenizer_func(patch, tokenizer)
     inputs = input_ids
     labels = label_ids
-    return {**instance, "input_ids": inputs, "labels": labels, "text": text_inputs, "patch": patch}
+    return {
+        **instance,
+        "input_ids": inputs,
+        "labels": labels,
+        "text": text_inputs,
+        "patch": patch,
+    }
 
 
 def add_columns_from_dict(dataset, dict_columns):
@@ -110,15 +122,19 @@ def main(
     if tokenizer_name is not None:
         tokenizer, tokenizer_func = TOKENIZER_FUNCS[tokenizer_name]
         eos_token = getattr(tokenizer, "eos_token", "")
-        if num_proc > 0 and tokenizer_name == 'cl100k':
-            logger.warning('cl100k tokenizer does not support multiprocessing. Ignoring num_proc')
+        if num_proc > 0 and tokenizer_name == "cl100k":
+            logger.warning(
+                "cl100k tokenizer does not support multiprocessing. Ignoring num_proc"
+            )
             num_proc = 0
 
     if Path(dataset_name_or_path).exists():
         dataset = load_from_disk(dataset_name_or_path)
     else:
         dataset = load_dataset(dataset_name_or_path)
-    dataset = dataset.filter(lambda x: len(x["text"]) <= 5_000_000)  # filter out superlong instances
+    dataset = dataset.filter(
+        lambda x: len(x["text"]) <= 5_000_000
+    )  # filter out superlong instances
     for split in dataset.keys():
         if split == "test":
             continue

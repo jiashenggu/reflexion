@@ -13,7 +13,7 @@ def run_immediate_reflexion(
     pass_at_k: int,
     log_path: str,
     verbose: bool,
-    is_leetcode: bool
+    is_leetcode: bool,
 ) -> None:
     exe = executor_factory(language)
     gen = generator_factory(language)
@@ -38,8 +38,7 @@ def run_immediate_reflexion(
             feedback = "Test cases omitted"
             while cur_iter < max_iters:
                 # get self-reflection
-                reflection = gen.self_reflection(
-                    cur_func_impl, feedback, model)
+                reflection = gen.self_reflection(cur_func_impl, feedback, model)
                 reflections += [reflection]
 
                 # apply self-reflection in the next attempt
@@ -49,7 +48,7 @@ def run_immediate_reflexion(
                     strategy="reflexion",
                     prev_func_impl=cur_func_impl,
                     feedback=feedback,
-                    self_reflection=reflection
+                    self_reflection=reflection,
                 )
                 assert isinstance(cur_func_impl, str)
 
@@ -57,7 +56,8 @@ def run_immediate_reflexion(
             cur_pass += 1
 
         is_solved = exe.evaluate(
-            item["entry_point"], cur_func_impl, item["test"], timeout=10)
+            item["entry_point"], cur_func_impl, item["test"], timeout=10
+        )
         if is_solved:
             num_success += 1
 
@@ -66,5 +66,4 @@ def run_immediate_reflexion(
         item["solution"] = cur_func_impl
         write_jsonl(log_path, [item], append=True)
 
-        print_v(
-            f'completed {i+1}/{num_items}: acc = {round(num_success/(i+1), 2)}')
+        print_v(f"completed {i+1}/{num_items}: acc = {round(num_success/(i+1), 2)}")

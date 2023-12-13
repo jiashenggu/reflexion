@@ -376,9 +376,7 @@ def add_text_inputs(
             desc="Adding text inputs",
         ):
             try:
-                with AutoContextManager(
-                    instance, root_dir, verbose=verbose
-                ) as cm:
+                with AutoContextManager(instance, root_dir, verbose=verbose) as cm:
                     readmes = cm.get_readme_files()
                     instance["readmes"] = ingest_files(readmes)
                     if max_context_len is not None:

@@ -2,7 +2,9 @@ import sys
 from datasets.load import load_dataset
 from utils import write_jsonl
 
-assert len(sys.argv) == 2, "Usage: python generate_dataset.py <MultiPL-E huggingface dataset name>"
+assert (
+    len(sys.argv) == 2
+), "Usage: python generate_dataset.py <MultiPL-E huggingface dataset name>"
 DATASET_NAME = sys.argv[1]
 
 
@@ -16,14 +18,13 @@ def download_dataset(dataset_name: str):
         print(entry)
         item["entry_point"] = entry
         item["test"] = item["tests"]
-        item["test"] = item["test"][1:] # there is some garbage at the start
+        item["test"] = item["test"][1:]  # there is some garbage at the start
         del item["tests"]
         final.append(item)
 
     output_path = f"./benchmarks/{dataset_name}.jsonl"
     _output_file = open(output_path, "w").close()
 
-    
     write_jsonl(output_path, final)
     print(f"dumped to `{output_path}`")
 

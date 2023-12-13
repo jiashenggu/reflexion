@@ -25,9 +25,6 @@ class Generator:
 
     @abstractmethod
     def internal_tests(
-            self,
-            func_sig: str,
-            model: ModelBase,
-            max_num_tests: int = 5
+        self, func_sig: str, model: ModelBase, max_num_tests: int = 5
     ) -> List[str]:
         ...
